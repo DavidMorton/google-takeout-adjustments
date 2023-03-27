@@ -5,7 +5,8 @@ from io import BytesIO
 import shutil
 import json
 from datetime import datetime
-from win32_setctime import setctime
+import re
+#from win32_setctime import setctime
 
 def process_zip_file(zip_path, output_dir):
     zip = ZipFile(zip_path)
@@ -18,14 +19,14 @@ def process_zip_file(zip_path, output_dir):
 
     for z in suitable_files:
         b = zip.open(z, mode='r').read()
-            
+
         basename = os.path.basename(z)
         with open(os.path.join(output_dir, basename), 'wb') as f:
             f.write(b)
         print(z)
 
 def process_zip_files(source_dir, takeout_name, output_dir):
-    
+
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
 
@@ -44,7 +45,7 @@ def process_zip_files(source_dir, takeout_name, output_dir):
             basename = os.path.basename(z)
             with open(os.path.join(output_dir, basename), 'wb') as f:
                 f.write(b)
-        
+
 def ensure_timestamp(file, time_taken:datetime):
     timestamp = time_taken.timestamp()
     try:
@@ -52,12 +53,18 @@ def ensure_timestamp(file, time_taken:datetime):
         exif = im.getexif()
         creation_time = exif.get(306)
         if creation_time is None:
-            proposed_exif_tag = time_taken.strftime('%Y:%m:%d %H:%M:%S')
+            name_without_extension = '.'.join(os.path.basename(file).split('.')[:-1])
+            try:
+                time_taken = datetime.strptime(name_without_extension, '%Y-%m-%d %H.%M.%S')
+                timestamp = time_taken.timestamp()
+            except:
+                pass
+            proposed_exif_tag = time_taken.strftime('%Y-%m-%d %H.%M.%S')
             exif[306] = proposed_exif_tag
-            im.save(file)
-    except:
+            im.save(file, exif=exif)
+    except Exception as e:
         pass
-    setctime(file, timestamp)
+    #setctime(file, timestamp)
     os.utime(file, (timestamp, timestamp))
 
 def process_folder(folder):
@@ -66,11 +73,15 @@ def process_folder(folder):
         full_path = os.path.join(folder, json_file)
         with open(full_path, 'r') as f:
             json_obj = json.load(f)
-        target_file = os.path.join(folder, json_obj['title'])
-        
+        target_file = os.path.join(folder, json_obj['title']).replace("'", '_')
+        # Need to handle the case of files that are doubled...
+        m = re.match('.*(\(\d*\)).json$', json_file)
+        if m is not None:
+            added_buffer = m.group(1)
+            target_file = f'{".".join(target_file.split(".")[:-1])}{added_buffer}.{target_file.split(".")[-1]}'
         timestamp = int(json_obj['photoTakenTime']['timestamp'])
         if not os.path.exists(target_file):
-            root_name = json_obj['title']
+            root_name = target_file
             extension = root_name.split('.')[-1]
             root_file_name = '.'.join(root_name.split('.')[:-1])
             while not os.path.exists(os.path.join(folder, f'{root_file_name}.{extension}')):
@@ -100,17 +111,24 @@ def rename_for_clarity(folder, year):
     for f in all_files:
         os.rename(os.path.join(folder, f), os.path.join(folder, f'{year}_{f}'))
 
-year = 2020
-takeout_name = "20230324T132441Z"
-output_path = "C:\\Users\\dvdmo\\Downloads\\Takeout_Images_2015\\"
-source_dir = "C:\\Users\\dvdmo\\Downloads\\"
+takeout_name = "20230325T130353Z"
+output_path = "/Users/davidmorton/Downloads/Takeout_Images_2012a/"
+source_dir = "/Users/davidmorton/Downloads"
 
 start_time = datetime.now()
 print(start_time.timestamp())
+
+root_dir = "/Users/davidmorton/Downloads/Takeout/Google Photos/"
+subdirs = sorted([folder for folder in os.listdir(root_dir)])
+for subdir in subdirs:
+
+#def process(output_path):
+
 #start_time = datetime.fromtimestamp(1679592063.331041)
-process_zip_files(source_dir, takeout_name, output_path)
-process_folder(output_path)
-delete_extras(output_path, start_time)
+	#process_zip_files(source_dir, takeout_name, output_path)
+	if not subdir.startswith('.'):
+		process_folder(os.path.join(root_dir, subdir))
+#delete_extras(output_path, start_time)
 #rename_for_clarity(output_path, year)
 
 
