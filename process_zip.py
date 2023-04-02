@@ -67,6 +67,12 @@ def ensure_timestamp(file, time_taken:datetime):
     #setctime(file, timestamp)
     os.utime(file, (timestamp, timestamp))
 
+def get_json_file_count(folder):
+    return len([f for f in os.listdir(folder) if f.lower().endswith('.json')])
+
+def get_all_file_count(folder):
+    return len([f for f in os.listdir(folder)])
+
 def process_folder(folder):
     json_files = [f for f in os.listdir(folder) if f.lower().endswith('.json')]
     for json_file in json_files:
@@ -100,10 +106,11 @@ def process_folder(folder):
         ensure_timestamp(target_file, datetime.fromtimestamp(timestamp))
         os.remove(os.path.join(folder, json_file))
 
+
 def delete_extras(folder, start_time:datetime):
     all_files = [f for f in os.listdir(folder)]
     for f in all_files:
-        if start_time.timestamp() < os.path.getctime(os.path.join(folder, f)):
+        if start_time.timestamp() < os.path.getmtime(os.path.join(folder, f)):
             os.remove(os.path.join(folder, f))
 
 def rename_for_clarity(folder, year):
@@ -111,30 +118,19 @@ def rename_for_clarity(folder, year):
     for f in all_files:
         os.rename(os.path.join(folder, f), os.path.join(folder, f'{year}_{f}'))
 
-takeout_name = "20230325T130353Z"
-output_path = "/Users/davidmorton/Downloads/Takeout_Images_2012a/"
+takeout_name = "20230402T20aoeuaoeu4454Z"
+output_path = "/Users/davidmorton/Downloads/Takeout_Images_2021/"
 source_dir = "/Users/davidmorton/Downloads"
 
 start_time = datetime.now()
-print(start_time.timestamp())
 
-root_dir = "/Users/davidmorton/Downloads/Takeout/Google Photos/"
-subdirs = sorted([folder for folder in os.listdir(root_dir)])
-for subdir in subdirs:
+process_zip_files(source_dir, takeout_name, output_path)
+json_file_count = get_json_file_count(output_path)
+process_folder(output_path)
+delete_extras(output_path, start_time)
+all_file_count = get_all_file_count(output_path)
 
-#def process(output_path):
-
-#start_time = datetime.fromtimestamp(1679592063.331041)
-	#process_zip_files(source_dir, takeout_name, output_path)
-	if not subdir.startswith('.'):
-		process_folder(os.path.join(root_dir, subdir))
-#delete_extras(output_path, start_time)
-#rename_for_clarity(output_path, year)
-
-
-
-#def set_exif(file):
-
-#get_exif("C:\\Users\\dvdmo\\OneDrive\\Pictures\\00100lrPORTRAIT_00100_BURST20200905200243563_COVER.jpg")
-#get_exif("C:\\Users\\dvdmo\\OneDrive\\Pictures\\Finished Artwork\\20210312 - Galactacus.jpg")
+print(f'JSON Files: {json_file_count}, All Files: {all_file_count}')
+if (json_file_count == all_file_count):
+    print("Everything is okay!")
 
