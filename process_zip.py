@@ -118,8 +118,8 @@ def rename_for_clarity(folder, year):
     for f in all_files:
         os.rename(os.path.join(folder, f), os.path.join(folder, f'{year}_{f}'))
 
-takeout_name = "20230402T20aoeuaoeu4454Z"
-output_path = "/Users/davidmorton/Downloads/Takeout_Images_2021/"
+takeout_name = "20230403T160959Z"
+output_path = "/Users/davidmorton/Downloads/1950/"
 source_dir = "/Users/davidmorton/Downloads"
 
 start_time = datetime.now()
